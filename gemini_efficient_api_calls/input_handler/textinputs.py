@@ -1,9 +1,9 @@
 import logging
 import requests
+from requests.exceptions import RequestException, HTTPError
 
-# TODO: Using inheritance to simplify structure
-
-class TextInput():
+class BaseTextInput():
+    content : str = ""
 
     def __init__(
         self,
@@ -11,7 +11,7 @@ class TextInput():
     ):
         self.content = content
 
-class FileInput():
+class FileInput(BaseTextInput):
 
     def __init__(
         self,
@@ -19,20 +19,31 @@ class FileInput():
         filetype : str = 'txt'
     ):
         self.content = ""
-        if filetype == 'txt':
-            # TODO: Error handling if website does not exist
-            with open(filepath, 'r', encoding='utf-8') as file:
-                self.content = file.read()
-        else:
-            logging.error('File reading has currently only been implemented for txt files.')
-            raise NotImplementedError("Only text file reading has been implemented")
+        try:
+            if filetype == 'txt':
+                with open(filepath, 'r', encoding='utf-8') as file:
+                    self.content = file.read()
+            else:
+                logging.error('File reading has currently only been implemented for txt files.')
+                raise NotImplementedError("Only text file reading has been implemented")
+        except FileNotFoundError:
+            logging.error(f"File {filepath} was not found")
+            raise FileNotFoundError(f"File {filepath} was not found")
+        except Exception as e:
+            raise(e)
 
-class WebsiteInput():
+class WebsiteInput(BaseTextInput):
 
     def __init__(
         self,
         link : str
     ):
         # TODO: Error handling, website doesnt exist, retry error etc
-        response = requests.get(link)
-        self.content = response.text
+        try:
+
+            response = requests.get(link)
+            response.raise_for_status()
+
+            self.content = response.text
+        except:
+            pass
